@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server';
 
 import { proxy } from '@/proxy';
-import { getCookieCache } from 'better-auth/cookies';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { Session } from '@/lib/auth/providers';
@@ -25,12 +24,6 @@ vi.mock('next/server', async () => {
     },
   };
 });
-
-vi.mock('better-auth/cookies', () => {
-  return { getCookieCache: vi.fn() };
-});
-
-const mockGetCookieCache = vi.mocked(getCookieCache);
 
 describe('proxy', () => {
   beforeEach(() => {
@@ -64,21 +57,16 @@ describe('proxy', () => {
   };
 
   it('allows public routes for unauthenticated users', async () => {
-    mockSession(null);
-
     const res = await proxy(makeReq('/terms'));
     expect(res).toEqual({ type: 'next' });
   });
 
   it('allows public routes (home, privacy, terms) for unauthenticated users', async () => {
-    mockSession(null);
-
     const res = await proxy(makeReq('/home'));
     expect(res).toEqual({ type: 'next' });
   });
 
   it('redirects unauthenticated users on protected routes', async () => {
-    mockSession(null);
     const res = await proxy(makeReq('/settings'));
     expect(res?.type).toBe('redirect');
     expect(res?.url).toContain('/sign-in');
@@ -86,8 +74,6 @@ describe('proxy', () => {
   });
 
   it('redirects unauthenticated users on org routes', async () => {
-    mockSession(null);
-
     const res = await proxy(makeReq('/org/test-org/dashboard'));
     expect(res?.type).toBe('redirect');
     expect(res?.url).toContain('/sign-in');
@@ -167,13 +153,11 @@ describe('proxy', () => {
   });
 
   it('calls NextResponse.next() for API routes', async () => {
-    mockSession(null);
-    const res = await proxy(makeReq('/api/user', cookies));
+    const res = await proxy(makeReq('/api/user'));
     expect(res).toEqual({ type: 'next' });
   });
 
   it('calls NextResponse.next() for tRPC routes', async () => {
-    mockSession(null);
     const res = await proxy(makeReq('/api/trpc/user.list'));
     expect(res).toEqual({ type: 'next' });
   });
